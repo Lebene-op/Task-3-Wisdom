@@ -1,0 +1,211 @@
+import tkinter as tk
+from tkinter import scrolledtext
+import re
+
+
+# ---------- Analysis Function ----------
+
+def analyze_input():
+
+    text = input_box.get("1.0", tk.END).strip().lower()
+
+    if not text:
+        result_box.config(state="normal")
+        result_box.delete("1.0", tk.END)
+        result_box.insert(tk.END, "Please enter a message or URL.")
+        result_box.config(state="disabled")
+        return
+
+    score = 0
+    red_flags = []
+
+    # Suspicious keywords
+    phishing_keywords = [
+        "verify",
+        "account suspended",
+        "click here",
+        "winner",
+        "claim now",
+        "free gift",
+        "limited offer",
+        "update account",
+        "login now"
+    ]
+
+    # Urgency words
+    urgency_words = [
+        "urgent",
+        "immediately",
+        "act now",
+        "within 24 hours",
+        "final warning",
+        "asap"
+    ]
+
+    # Sensitive information requests
+    sensitive_words = [
+        "password",
+        "otp",
+        "bank details",
+        "credit card",
+        "debit card",
+        "pin",
+        "social security"
+    ]
+
+    # Check phishing keywords
+    for word in phishing_keywords:
+        if word in text:
+            score += 1
+            red_flags.append(
+                f"Suspicious phrase detected: '{word}'"
+            )
+
+    # Check urgency
+    for word in urgency_words:
+        if word in text:
+            score += 1
+            red_flags.append(
+                f"Urgency language detected: '{word}'"
+            )
+
+    # Check sensitive requests
+    for word in sensitive_words:
+        if word in text:
+            score += 2
+            red_flags.append(
+                f"Sensitive information request detected: '{word}'"
+            )
+
+    # Detect URLs
+    urls = re.findall(r'https?://\S+|www\.\S+', text)
+
+    if urls:
+        score += 1
+        red_flags.append("Contains external link(s)")
+
+        for url in urls:
+
+            # Basic suspicious domain indicators
+            suspicious_domains = [
+                ".xyz",
+                ".top",
+                ".click",
+                ".ru",
+                ".tk"
+            ]
+
+            if any(domain in url for domain in suspicious_domains):
+                score += 2
+                red_flags.append(
+                    f"Suspicious domain detected: {url}"
+                )
+
+    # Determine risk level
+    if score <= 1:
+        risk = "LOW RISK ✅"
+
+    elif score <= 4:
+        risk = "MEDIUM RISK ⚠️"
+
+    else:
+        risk = "HIGH RISK 🚨"
+
+    # Generate explanation
+    explanation = ""
+
+    if score <= 1:
+        explanation = (
+            "Very few phishing indicators were detected."
+        )
+
+    elif score <= 4:
+        explanation = (
+            "Some phishing indicators were detected. "
+            "Exercise caution before interacting with this message."
+        )
+
+    else:
+        explanation = (
+            "Multiple phishing indicators were detected. "
+            "This message may be attempting to steal sensitive information "
+            "or redirect users to malicious websites."
+        )
+
+    # Display Results
+    result_box.config(state="normal")
+    result_box.delete("1.0", tk.END)
+
+    result_box.insert(tk.END, f"Risk Level: {risk}\n\n")
+    result_box.insert(tk.END, f"Risk Score: {score}\n\n")
+
+    result_box.insert(tk.END, "Red Flags Found:\n")
+
+    if red_flags:
+        for flag in red_flags:
+            result_box.insert(tk.END, f"• {flag}\n")
+    else:
+        result_box.insert(tk.END, "• No obvious red flags detected.\n")
+
+    result_box.insert(tk.END, "\nExplanation:\n")
+    result_box.insert(tk.END, explanation)
+
+    result_box.config(state="disabled")
+
+
+# ---------- GUI ----------
+
+root = tk.Tk()
+root.title("Phishing Awareness Analyzer")
+root.geometry("850x600")
+root.resizable(False, False)
+
+title = tk.Label(
+    root,
+    text="Phishing Awareness Analyzer",
+    font=("Arial", 18, "bold")
+)
+title.pack(pady=10)
+
+instruction = tk.Label(
+    root,
+    text="Paste an email, SMS, or URL below:",
+    font=("Arial", 11)
+)
+instruction.pack()
+
+input_box = scrolledtext.ScrolledText(
+    root,
+    width=95,
+    height=12,
+    font=("Arial", 11)
+)
+input_box.pack(pady=10)
+
+analyze_button = tk.Button(
+    root,
+    text="Analyze",
+    command=analyze_input,
+    font=("Arial", 12, "bold"),
+    width=20
+)
+analyze_button.pack(pady=5)
+
+results_label = tk.Label(
+    root,
+    text="Analysis Results",
+    font=("Arial", 14, "bold")
+)
+results_label.pack(pady=10)
+
+result_box = scrolledtext.ScrolledText(
+    root,
+    width=95,
+    height=15,
+    font=("Arial", 11)
+)
+
+result_box.pack()
+result_box.config(state="disabled")
+
+root.mainloop()
